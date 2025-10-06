@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Voice Live API - Web UI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 TPD Home User - Azure Voice Live API</h1>
+            <p class="subtitle">Voice Conversation Interface</p>
+        </header>
+
+        <main>
+            <!-- Combined Status and Model Configuration -->
+            <div class="status-config-panel">
+                <div class="status-section">
+                    <div class="status-indicator">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span class="status-text" id="statusText">Ready</span>
+                    </div>
+                </div>
+                
+                <div class="model-section">
+                    <label for="modelInput" class="model-label">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        Model:
+                    </label>
+                    <input 
+                        type="text" 
+                        id="modelInput" 
+                        class="model-input" 
+                        value="{{ default_model }}"
+                        placeholder="e.g., gpt-4o, gpt-realtime"
+                    >
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <button id="startBtn" class="btn btn-start">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    Start Conversation
+                </button>
+                
+                <button id="stopBtn" class="btn btn-stop" disabled>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="6" y="6" width="12" height="12"></rect>
+                    </svg>
+                    Stop Conversation
+                </button>
+            </div>
+
+            <!-- Chat Messages Container -->
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-header">
+                    <h2>💬 Conversation</h2>
+                    <div class="loading-spinner-chat" id="loadingSpinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Waiting for AI response...</span>
+                    </div>
+                    <button id="clearChatBtn" class="btn-clear" title="Clear chat">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-placeholder">
+                        <p>Start a conversation to see messages here...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="messageBox" class="message-box" style="display: none;">
+                <p id="messageText"></p>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by Azure AI Foundry</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
