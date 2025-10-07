@@ -13,8 +13,6 @@ from dotenv import load_dotenv
 from voice_live_agents import (
     AzureVoiceLive,
     listen_and_send_audio,
-    send_audio_chunk_to_azure,
-    receive_audio_for_browser,
     stop_event,
     write_conversation_log,
     logfilename as voice_logfilename
@@ -31,8 +29,6 @@ load_dotenv("./.env", override=True)
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-
-greeting_message = "Hello. I am Wendy. Helpful Verizon assistant who can help with your Verizon home equipments."
 
 # Global state management
 conversation_state = {
@@ -51,38 +47,86 @@ logger = logging.getLogger(__name__)
 
 
 def receive_audio_and_playback_with_emit(connection) -> None:
-    """Modified version of receive_audio_for_browser that emits audio and transcripts to frontend"""
+    """Modified version of receive_audio_and_playback that emits transcripts to frontend"""
+    from voice_live_agents import AudioPlayerAsync
     
-    def audio_callback(audio_base64):
-        """Send audio chunks to browser via WebSocket"""
-        try:
-            socketio.emit('audio_output', {'audio': audio_base64})
-        except Exception as e:
-            logger.error(f"Error emitting audio to browser: {e}")
-    
-    def transcript_callback(data):
-        """Send transcripts to browser via WebSocket"""
-        try:
-            socketio.emit('transcript', {
-                'type': data['type'],
-                'text': data['text'],
-                'timestamp': datetime.now().isoformat()
-            })
-        except Exception as e:
-            logger.error(f"Error emitting transcript to browser: {e}")
-    
-    def speech_started_callback():
-        """Notify browser that user started speaking (to interrupt audio playback)"""
-        try:
-            socketio.emit('speech_started', {})
-            logger.info("Speech started - notifying browser to stop playback")
-        except Exception as e:
-            logger.error(f"Error emitting speech_started to browser: {e}")
-    
-    # Use the new browser-compatible receive function
-    from voice_live_agents import receive_audio_for_browser
-    receive_audio_for_browser(connection, audio_callback, transcript_callback, speech_started_callback)
+    last_audio_item_id = None
+    audio_player = AudioPlayerAsync()
 
+    logger.info("Starting audio playback with UI updates...")
+    try:
+        while not stop_event.is_set():
+            raw_event = connection.recv()
+            if raw_event is None:
+                continue
+
+            try:
+                event = json.loads(raw_event)
+                event_type = event.get("type")
+                print(f"Received event:", {event_type})
+
+                if event_type == "session.created":
+                    session = event.get("session")
+                    logger.info(f"Session created: {session.get('id')}")
+                    write_conversation_log(f"SessionID: {session.get('id')}")
+
+                elif event_type == "conversation.item.input_audio_transcription.completed":
+                    user_transcript = event.get("transcript", "")
+                    print(f'\n\tUser Input:\t{user_transcript}\n')
+                    write_conversation_log(f'User Input:\t{user_transcript}')
+                    
+                    # Emit to frontend
+                    socketio.emit('transcript', {
+                        'type': 'user',
+                        'text': user_transcript,
+                        'timestamp': datetime.now().isoformat()
+                    })
+
+                elif event_type == "response.text.done":
+                    agent_text = event.get("text", "")
+                    print(f'\n\tAgent Text Response:\t{agent_text}\n')
+                    write_conversation_log(f'Agent Text Response:\t{agent_text}')
+
+                elif event_type == "response.audio_transcript.done":
+                    agent_audio = event.get("transcript", "")
+                    print(f'\n\tAgent Audio Response:\t{agent_audio}\n')
+                    write_conversation_log(f'Agent Audio Response:\t{agent_audio}')
+                    
+                    # Emit to frontend
+                    socketio.emit('transcript', {
+                        'type': 'agent',
+                        'text': agent_audio,
+                        'timestamp': datetime.now().isoformat()
+                    })
+
+                elif event_type == "response.audio.delta":
+                    if event.get("item_id") != last_audio_item_id:
+                        last_audio_item_id = event.get("item_id")
+
+                    bytes_data = base64.b64decode(event.get("delta", ""))
+                    if bytes_data:
+                        logger.debug(f"Received audio data of length: {len(bytes_data)}")   
+                    audio_player.add_data(bytes_data)
+
+                elif event.get("type") == "input_audio_buffer.speech_started":
+                    print("Speech started")
+                    audio_player.stop()
+
+                elif event.get("type") == "error":
+                    error_details = event.get("error", {})
+                    error_type = error_details.get("type", "Unknown")
+                    error_code = error_details.get("code", "Unknown")
+                    error_message = error_details.get("message", "No message provided")
+                    raise ValueError(f"Error received: Type={error_type}, Code={error_code}, Message={error_message}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON event: {e}")
+                continue
+
+    except Exception as e:
+        logger.error(f"Error in audio playback: {e}")
+    finally:
+        audio_player.terminate()
+        logger.info("Playback done.")
 
 
 @app.route('/')
@@ -127,7 +171,6 @@ def start_conversation():
         credential = DefaultAzureCredential()
         scopes = "https://ai.azure.com/.default"
         token = credential.get_token(scopes)
-        # print("Token: " + token.token)
         
         # Create client and connection
         client = AzureVoiceLive(
@@ -135,8 +178,6 @@ def start_conversation():
             api_version=api_version,
             token=token.token,
         )
-
-
         
         connection = client.connect(
             project_name=project_name,
@@ -186,33 +227,23 @@ def start_conversation():
         write_conversation_log(f'Model: {model_name}')
         write_conversation_log(f'Session Config: {json.dumps(session_update)}')
         
-        # Start receive thread only (audio input comes from browser via WebSocket)
-        # Note: We don't start listen_and_send_audio because audio comes from browser
+        # Start audio threads
+        send_thread = threading.Thread(target=listen_and_send_audio, args=(connection,))
         receive_thread = threading.Thread(target=receive_audio_and_playback_with_emit, args=(connection,))
         
+        send_thread.daemon = True
         receive_thread.daemon = True
+        
+        send_thread.start()
         receive_thread.start()
         
         # Update state
         conversation_state['active'] = True
         conversation_state['connection'] = connection
-        conversation_state['threads'] = [receive_thread]  # Only receive thread
+        conversation_state['threads'] = [send_thread, receive_thread]
         conversation_state['client'] = client
         
-        logger.info("Voice conversation started (browser-based audio)")
-        
-        # Send greeting message as soon as session is created
-        greeting_param = {
-            "type": "response.create",
-            "response": {
-                "modalities": ["text", "audio"],
-                "instructions": f"Greet the user with this message: '{greeting_message}'",
-            },
-            "event_id": ""
-        }
-        connection.send(json.dumps(greeting_param))
-        logger.info("Greeting message sent to Azure")
-        
+        logger.info("Voice conversation started")
         return jsonify({'status': 'success', 'message': 'Conversation started'})
         
     except Exception as e:
@@ -260,44 +291,6 @@ def get_status():
     return jsonify({
         'active': conversation_state['active']
     })
-
-
-# Socket.IO event handlers for audio streaming
-@socketio.on('audio_input')
-def handle_audio_input(data):
-    """
-    Receive audio from browser and forward to Azure Voice Live API
-    Expected data format: {'audio': base64_encoded_pcm16_audio}
-    """
-    if not conversation_state['active']:
-        logger.warning("Received audio input but no active conversation")
-        return
-    
-    try:
-        audio_base64 = data.get('audio')
-        if not audio_base64:
-            logger.error("No audio data in audio_input event")
-            return
-        
-        connection = conversation_state['connection']
-        if connection:
-            send_audio_chunk_to_azure(connection, audio_base64)
-        else:
-            logger.error("No active connection to send audio")
-    except Exception as e:
-        logger.error(f"Error handling audio input: {e}")
-
-
-@socketio.on('connect')
-def handle_connect():
-    """Handle client connection"""
-    logger.info(f"Client connected: {request.sid}")
-
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Handle client disconnection"""
-    logger.info(f"Client disconnected: {request.sid}")
 
 
 if __name__ == '__main__':

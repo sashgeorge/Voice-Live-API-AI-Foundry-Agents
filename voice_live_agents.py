@@ -7,10 +7,18 @@ import base64
 import logging
 import threading
 import numpy as np
-import sounddevice as sd
 import queue
 import signal
 import sys
+
+# Make sounddevice optional - only needed for local desktop mode
+try:
+    import sounddevice as sd
+    SOUNDDEVICE_AVAILABLE = True
+except ImportError:
+    SOUNDDEVICE_AVAILABLE = False
+    sd = None
+    print("Note: sounddevice not available. Browser-based audio mode only.")
 
 from collections import deque
 from dotenv import load_dotenv
@@ -26,6 +34,9 @@ from datetime import datetime
 # Global variables for thread coordination
 stop_event = threading.Event()
 connection_queue = queue.Queue()
+
+# Global audio output queue for browser-based playback
+browser_audio_output_queue = queue.Queue()
 
 # This is the main function to run the Voice Live API client.
 def main() -> None: 
@@ -222,6 +233,9 @@ class AzureVoiceLive:
 
 class AudioPlayerAsync:
     def __init__(self):
+        if not SOUNDDEVICE_AVAILABLE:
+            raise RuntimeError("AudioPlayerAsync requires sounddevice module. Install with: pip install sounddevice")
+        
         self.queue = deque()
         self.lock = threading.Lock()
         self.stream = sd.OutputStream(
@@ -273,6 +287,9 @@ class AudioPlayerAsync:
         self.stream.close()
 
 def listen_and_send_audio(connection: VoiceLiveConnection) -> None:
+    if not SOUNDDEVICE_AVAILABLE:
+        raise RuntimeError("listen_and_send_audio requires sounddevice module. Install with: pip install sounddevice")
+    
     logger.info("Starting audio stream ...")
 
     stream = sd.InputStream(channels=1, samplerate=AUDIO_SAMPLE_RATE, dtype="int16")
@@ -295,6 +312,116 @@ def listen_and_send_audio(connection: VoiceLiveConnection) -> None:
         stream.stop()
         stream.close()
         logger.info("Audio stream closed.")
+
+def send_audio_chunk_to_azure(connection: VoiceLiveConnection, audio_base64: str) -> None:
+    """
+    Send a single audio chunk to Azure Voice Live API.
+    This function is designed for WebSocket-based audio streaming from the browser.
+    
+    Args:
+        connection: The Azure Voice Live connection
+        audio_base64: Base64-encoded audio data (PCM16, 24kHz, mono)
+    """
+    try:
+        param = {
+            "type": "input_audio_buffer.append",
+            "audio": audio_base64,
+            "event_id": ""
+        }
+        data_json = json.dumps(param)
+        connection.send(data_json)
+    except Exception as e:
+        logger.error(f"Error sending audio chunk to Azure: {e}")
+
+
+def receive_audio_for_browser(connection: VoiceLiveConnection, audio_callback=None, transcript_callback=None, speech_started_callback=None) -> None:
+    """
+    Receive audio and events from Azure Voice Live API and make them available for browser playback.
+    This function is designed for WebSocket-based audio streaming to the browser.
+    
+    Args:
+        connection: The Azure Voice Live connection
+        audio_callback: Optional callback function to handle audio chunks (receives base64 audio string)
+        transcript_callback: Optional callback function to handle transcripts (receives dict with type and text)
+        speech_started_callback: Optional callback function called when user starts speaking (to interrupt playback)
+    """
+    last_audio_item_id = None
+
+    logger.info("Starting audio reception for browser playback...")
+    try:
+        while not stop_event.is_set():
+            raw_event = connection.recv()
+            if raw_event is None:
+                continue
+
+            try:
+                event = json.loads(raw_event)
+                event_type = event.get("type")
+                logger.debug(f"Received event: {event_type}")
+
+                if event_type == "session.created":
+                    session = event.get("session")
+                    logger.info(f"Session created: {session.get('id')}")
+                    write_conversation_log(f"SessionID: {session.get('id')}")
+
+                elif event_type == "conversation.item.input_audio_transcription.completed":
+                    user_transcript = event.get("transcript", "")
+                    print(f'\n\tUser Input:\t{user_transcript}\n')
+                    write_conversation_log(f'User Input:\t{user_transcript}')
+                    
+                    if transcript_callback:
+                        transcript_callback({'type': 'user', 'text': user_transcript})
+
+                elif event_type == "response.text.done":
+                    agent_text = event.get("text", "")
+                    print(f'\n\tAgent Text Response:\t{agent_text}\n')
+                    write_conversation_log(f'Agent Text Response:\t{agent_text}')
+
+                elif event_type == "response.audio_transcript.done":
+                    agent_audio = event.get("transcript", "")
+                    print(f'\n\tAgent Audio Response:\t{agent_audio}\n')
+                    write_conversation_log(f'Agent Audio Response:\t{agent_audio}')
+                    
+                    if transcript_callback:
+                        transcript_callback({'type': 'agent', 'text': agent_audio})
+
+                elif event_type == "response.audio.delta":
+                    if event.get("item_id") != last_audio_item_id:
+                        last_audio_item_id = event.get("item_id")
+
+                    audio_delta = event.get("delta", "")
+                    if audio_delta:
+                        logger.debug(f"Received audio delta")
+                        # Send audio to browser via callback
+                        if audio_callback:
+                            audio_callback(audio_delta)
+                        else:
+                            # Fallback: put in queue
+                            browser_audio_output_queue.put(audio_delta)
+
+                elif event_type == "input_audio_buffer.speech_started":
+                    print("Speech started")
+                    # Signal to stop playback in browser
+                    if speech_started_callback:
+                        speech_started_callback()
+
+                elif event_type == "error":
+                    error_details = event.get("error", {})
+                    error_type = error_details.get("type", "Unknown")
+                    error_code = error_details.get("code", "Unknown")
+                    error_message = error_details.get("message", "No message provided")
+                    logger.error(f"Error received: Type={error_type}, Code={error_code}, Message={error_message}")
+                    raise ValueError(f"Error received: Type={error_type}, Code={error_code}, Message={error_message}")
+                    
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON event: {e}")
+                continue
+
+    except Exception as e:
+        logger.error(f"Error in audio reception: {e}")
+    finally:
+        logger.info("Audio reception stopped.")
+
 
 def receive_audio_and_playback(connection: VoiceLiveConnection) -> None:
     last_audio_item_id = None

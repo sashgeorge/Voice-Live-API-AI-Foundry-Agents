@@ -12,10 +12,14 @@ numpy==2.2.5
 pycparser==2.22
 python-dotenv==1.1.0
 requests==2.32.3
-sounddevice==0.5.1
 typing_extensions==4.13.2
 urllib3==2.4.0
 websocket-client==1.8.0
+
+# sounddevice is OPTIONAL - only needed for local desktop mode (python voice_live_agents.py)
+# For web deployment (Flask app with browser audio), sounddevice is NOT required
+# sounddevice==0.5.1
+
 
 
 
