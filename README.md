@@ -1,361 +1,578 @@
-# Azure Voice Live API with AI Foundry Agents
+# Azure Voice Live API with AI Foundry Agents# Azure Voice Live API with AI Foundry Agents
 
-A production-ready, browser-based real-time voice conversation application using Azure Voice Live API and AI Foundry Agents. Features WebSocket-based audio streaming, speech interruption, and containerized deployment support.
 
-[![GitHub](https://img.shields.io/badge/GitHub-sashgeorge%2FVoice--Live--API--AI--Foundry--Agents-blue)](https://github.com/sashgeorge/Voice-Live-API-AI-Foundry-Agents)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## 📋 Table of Contents
+A production-ready, browser-based real-time voice conversation application using Azure Voice Live API and AI Foundry Agents.A production-ready, browser-based real-time voice conversation application using Azure Voice Live API and AI Foundry Agents. Features WebSocket-based audio streaming, speech interruption, and containerized deployment support.
+
+
+
+[![GitHub](https://img.shields.io/badge/GitHub-sashgeorge%2FVoice--Live--API--AI--Foundry--Agents-blue)](https://github.com/sashgeorge/Voice-Live-API-AI-Foundry-Agents)[![GitHub](https://img.shields.io/badge/GitHub-sashgeorge%2FVoice--Live--API--AI--Foundry--Agents-blue)](https://github.com/sashgeorge/Voice-Live-API-AI-Foundry-Agents)
+
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+
+
+---## 📋 Table of Contents
+
 - [Features](#-features)
-- [Architecture](#-architecture)
+
+## 🌟 Features- [Architecture](#-architecture)
+
 - [Quick Start](#-quick-start)
-- [Environment Variables](#-environment-variables)
-- [Azure Roles & Permissions](#-azure-roles--permissions)
-- [Local Development](#-local-development)
-- [Docker Deployment](#-docker-deployment)
-- [Azure Container Apps Deployment](#-azure-container-apps-deployment)
-- [Audio System](#-audio-system)
+
+- 🎤 Real-time voice conversations with AI agents- [Environment Variables](#-environment-variables)
+
+- 💬 Live chat transcription display- [Azure Roles & Permissions](#-azure-roles--permissions)
+
+- 🛑 Smart speech interruption (AI stops when you speak)- [Local Development](#-local-development)
+
+- 🌐 Browser-based audio (Web Audio API)- [Docker Deployment](#-docker-deployment)
+
+- 🔐 Secure Azure authentication with managed identities- [Azure Container Apps Deployment](#-azure-container-apps-deployment)
+
+- 🐳 Docker and Azure Container Apps deployment ready- [Audio System](#-audio-system)
+
 - [Project Structure](#-project-structure)
-- [Security Best Practices](#-security-best-practices)
+
+---- [Security Best Practices](#-security-best-practices)
+
 - [Troubleshooting](#-troubleshooting)
-- [References](#-references)
 
----
+## 🚀 Quick Start- [References](#-references)
 
-## 🌟 Features
 
-### Core Functionality
+
+### Prerequisites---
+
+
+
+1. **Azure Resources**## 🌟 Features
+
+   - Azure AI Foundry project with an AI agent ([Create one](https://ai.azure.com))
+
+   - Azure subscription with permissions### Core Functionality
+
 - 🎤 **Real-time Voice Conversations**: Browser-based audio capture and playback
-- 🤖 **AI Foundry Agent Integration**: Connect to AI agents with custom instructions
-- 💬 **Live Chat Display**: Real-time transcription in chat interface
-- 🛑 **Speech Interruption**: Stop AI response when user starts speaking
+
+2. **Local Development**- 🤖 **AI Foundry Agent Integration**: Connect to AI agents with custom instructions
+
+   - Python 3.8+- 💬 **Live Chat Display**: Real-time transcription in chat interface
+
+   - Azure CLI (`az login`)- 🛑 **Speech Interruption**: Stop AI response when user starts speaking
+
 - 🔐 **Azure Authentication**: DefaultAzureCredential with managed identity support
-- 📝 **Conversation Logging**: Automatic logging to `logs/` directory
+
+### Installation- 📝 **Conversation Logging**: Automatic logging to `logs/` directory
+
 - 🎨 **Modern Responsive UI**: Works on desktop, tablet, and mobile
 
-### Audio Features
-- **Web Audio API**: Browser-based microphone capture (no server-side audio devices)
-- **Sequential Playback**: Audio chunks play in order without overlap
+```bash
+
+# Clone repository### Audio Features
+
+git clone https://github.com/sashgeorge/Voice-Live-API-AI-Foundry-Agents.git- **Web Audio API**: Browser-based microphone capture (no server-side audio devices)
+
+cd Voice-Live-API-AI-Foundry-Agents- **Sequential Playback**: Audio chunks play in order without overlap
+
 - **Smart Interruption**: Active audio sources stop when user speaks
-- **VAD Integration**: Voice Activity Detection from Azure
-- **Auto-cleanup**: Proper resource management and memory cleanup
 
-### Deployment Options
+# Create virtual environment- **VAD Integration**: Voice Activity Detection from Azure
+
+python -m venv myenv- **Auto-cleanup**: Proper resource management and memory cleanup
+
+myenv\Scripts\activate  # Windows
+
+# source myenv/bin/activate  # Linux/Mac### Deployment Options
+
 - 🐳 **Docker**: Containerized with Docker Compose support
-- ☁️ **Azure Container Apps**: Production-ready cloud deployment
-- 🔧 **Local Development**: Run with Python Flask for testing
 
----
+# Install dependencies- ☁️ **Azure Container Apps**: Production-ready cloud deployment
+
+pip install -r requirements.txt- 🔧 **Local Development**: Run with Python Flask for testing
+
+
+
+# Configure environment---
+
+# Create .env file with your Azure credentials (see below)
 
 ## 🏗️ Architecture
 
-### System Architecture
+# Login to Azure
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      User Browser                           │
+az login### System Architecture
+
+
+
+# Run application```
+
+python app.py┌─────────────────────────────────────────────────────────────┐
+
+```│                      User Browser                           │
+
 │                                                             │
-│  ┌──────────────┐         ┌─────────────────┐             │
+
+Open http://localhost:5000 in your browser.│  ┌──────────────┐         ┌─────────────────┐             │
+
 │  │ Web Audio API │ ◄─────► │ Socket.IO Client │             │
-│  │ (Microphone) │         │  (WebSocket)     │             │
+
+---│  │ (Microphone) │         │  (WebSocket)     │             │
+
 │  └──────────────┘         └─────────┬───────┘             │
-│                                      │                      │
+
+## ⚙️ Configuration│                                      │                      │
+
 └──────────────────────────────────────┼──────────────────────┘
-                                       │
+
+Create a `.env` file:                                       │
+
                     audio_input, speech_started events
-                                       │
-                                       ↓
-┌──────────────────────────────────────────────────────────────┐
-│              Flask Server (Azure Container Apps)             │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐     │
+
+```bash                                       │
+
+# Required                                       ↓
+
+AZURE_VOICE_LIVE_ENDPOINT=https://your-foundry-project.azure.com┌──────────────────────────────────────────────────────────────┐
+
+AZURE_VOICE_LIVE_API_VERSION=2025-10-01│              Flask Server (Azure Container Apps)             │
+
+AI_FOUNDRY_PROJECT_NAME=your-project-name│                                                              │
+
+AI_FOUNDRY_AGENT_ID=your-agent-id│  ┌────────────────────────────────────────────────────┐     │
+
 │  │  Socket.IO Event Handlers                          │     │
-│  │  • audio_input  • start_conversation               │     │
-│  │  • stop_conversation                               │     │
-│  └────────────────┬───────────────────────────────────┘     │
-│                   │                                          │
+
+# Optional│  │  • audio_input  • start_conversation               │     │
+
+FLASK_ENV=production│  │  • stop_conversation                               │     │
+
+LOG_LEVEL=INFO│  └────────────────┬───────────────────────────────────┘     │
+
+```│                   │                                          │
+
 │                   ↓                                          │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │  AzureVoiceLive Client                             │     │
-│  │  • DefaultAzureCredential                          │     │
-│  │  • Token scope: https://ai.azure.com/.default      │     │
+
+**Finding your values:**│  ┌────────────────────────────────────────────────────┐     │
+
+- Go to [Azure AI Foundry Portal](https://ai.azure.com)│  │  AzureVoiceLive Client                             │     │
+
+- Select your project → Settings → Properties → Copy endpoint│  │  • DefaultAzureCredential                          │     │
+
+- Navigate to Agents → Select your agent → Copy Agent ID│  │  • Token scope: https://ai.azure.com/.default      │     │
+
 │  │  • WebSocket connection to Azure                   │     │
-│  └────────────────┬───────────────────────────────────┘     │
+
+---│  └────────────────┬───────────────────────────────────┘     │
+
 └───────────────────┼──────────────────────────────────────────┘
-                    │
+
+## 🔐 Azure Roles & Permissions                    │
+
          Bearer token Authorization
-                    │
+
+Your identity (user or managed identity) needs these roles:                    │
+
                     ↓
-┌──────────────────────────────────────────────────────────────┐
-│         Azure Voice Live API (AI Foundry)                    │
+
+1. **Azure AI Developer** - On AI Foundry Project┌──────────────────────────────────────────────────────────────┐
+
+2. **Cognitive Services User** - On AI Services Account│         Azure Voice Live API (AI Foundry)                    │
+
 │                                                              │
-│  wss://{endpoint}/voice-live/realtime                        │
-│    ?api-version=2025-10-01                                   │
-│    &agent-project-name={project}                             │
-│    &agent-id={agent}                                         │
+
+**Quick setup:**│  wss://{endpoint}/voice-live/realtime                        │
+
+```bash│    ?api-version=2025-10-01                                   │
+
+# Get your user ID│    &agent-project-name={project}                             │
+
+USER_ID=$(az ad signed-in-user show --query id -o tsv)│    &agent-id={agent}                                         │
+
 │    &agent-access-token={token}                               │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │  AI Foundry Agent                                  │     │
-│  │  • Custom instructions & knowledge                 │     │
-│  │  • Voice Activity Detection (VAD)                  │     │
+
+# Assign roles (replace with your resource names)│                                                              │
+
+az role assignment create \│  ┌────────────────────────────────────────────────────┐     │
+
+  --role "Azure AI Developer" \│  │  AI Foundry Agent                                  │     │
+
+  --assignee $USER_ID \│  │  • Custom instructions & knowledge                 │     │
+
+  --scope /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.MachineLearningServices/workspaces/{project}│  │  • Voice Activity Detection (VAD)                  │     │
+
 │  │  • Real-time audio synthesis                       │     │
-│  │  • Conversational AI                               │     │
-│  └────────────────────────────────────────────────────┘     │
-└──────────────────────────────────────────────────────────────┘
+
+az role assignment create \│  │  • Conversational AI                               │     │
+
+  --role "Cognitive Services User" \│  └────────────────────────────────────────────────────┘     │
+
+  --assignee $USER_ID \└──────────────────────────────────────────────────────────────┘
+
+  --scope /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}                    │
+
+```      audio_chunk, transcript, speech_started
+
                     │
-      audio_chunk, transcript, speech_started
-                    │
-                    ↓
+
+**⏳ Wait 5 minutes for role propagation before testing.**                    ↓
+
              Browser plays audio
-```
 
-### Authentication Flow
+📖 [Detailed Role Setup Guide →](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#azure-ai-developer)```
 
-```
+
+
+---### Authentication Flow
+
+
+
+## 🐳 Docker Deployment```
+
 Application Start
-       ↓
+
+### Using Docker Compose       ↓
+
 DefaultAzureCredential()
-  • Managed Identity (in Azure)
-  • Azure CLI (local dev)
-       ↓
-Get token for scope:
+
+```bash  • Managed Identity (in Azure)
+
+docker-compose up -d  • Azure CLI (local dev)
+
+docker-compose logs -f  # View logs       ↓
+
+```Get token for scope:
+
   "https://ai.azure.com/.default"
-       ↓
+
+### Using Docker CLI       ↓
+
 Azure AD validates:
-  • Role: Azure AI Developer
-  • Role: Cognitive Services User
+
+```bash  • Role: Azure AI Developer
+
+docker build -t voicelive-api .  • Role: Cognitive Services User
+
+docker run -d -p 5000:5000 --env-file .env voicelive-api       ↓
+
+```Returns access token
+
        ↓
-Returns access token
-       ↓
-Connect to Voice Live API
+
+---Connect to Voice Live API
+
   Authorization: Bearer {token}
-```
 
-### Audio Processing Flow
+## ☁️ Azure Container Apps Deployment```
 
-```
-User speaks
-    ↓
-Browser: getUserMedia() captures microphone
-    ↓
-AudioContext processes audio
-    ↓
+
+
+```bash### Audio Processing Flow
+
+# Deploy to Azure
+
+az containerapp up \```
+
+  --name voicelive-app \User speaks
+
+  --resource-group mygroup \    ↓
+
+  --location eastus \Browser: getUserMedia() captures microphone
+
+  --ingress external \    ↓
+
+  --target-port 5000 \AudioContext processes audio
+
+  --source .    ↓
+
 Convert to PCM 16-bit mono 24kHz
-    ↓
-Socket.IO emit('audio_input', audioData)
-    ↓
-Flask receives audio chunk
-    ↓
-Forward to Azure Voice Live API via WebSocket
-    ↓
-Azure AI Agent processes
-    ↓
+
+# Configure environment variables    ↓
+
+az containerapp update \Socket.IO emit('audio_input', audioData)
+
+  --name voicelive-app \    ↓
+
+  --resource-group mygroup \Flask receives audio chunk
+
+  --set-env-vars \    ↓
+
+    AZURE_VOICE_LIVE_ENDPOINT="https://..." \Forward to Azure Voice Live API via WebSocket
+
+    AI_FOUNDRY_PROJECT_NAME="..." \    ↓
+
+    AI_FOUNDRY_AGENT_ID="..."Azure AI Agent processes
+
+```    ↓
+
 Azure sends back:
-  • audio_chunk (PCM audio)
+
+**For production:** Use managed identity instead of API keys.  • audio_chunk (PCM audio)
+
   • transcript (text)
-  • speech_started (VAD event)
+
+📖 [Complete Deployment Guide →](https://learn.microsoft.com/azure/container-apps/deploy-artifact)  • speech_started (VAD event)
+
     ↓
-Flask emits to browser:
+
+---Flask emits to browser:
+
   • 'audio_chunk' → playAudioOutput()
-  • 'transcript' → addMessage()
+
+## 📂 Project Structure  • 'transcript' → addMessage()
+
   • 'speech_started' → stopAudioPlayback()
-    ↓
-Browser: Sequential playback with interruption support
-```
 
-### Speech Interruption System
+```    ↓
 
-The application uses a sophisticated multi-layer interruption system:
+Voice-Live-API-AI-Foundry-Agents/Browser: Sequential playback with interruption support
 
-```
-AI is speaking (audio scheduled in browser)
-    ↓
-User starts speaking (detected by Azure VAD)
-    ↓
-Azure sends 'speech_started' event to Flask
-    ↓
+├── app.py                      # Flask server with Socket.IO```
+
+├── voice_live_agents.py        # Azure Voice Live API client
+
+├── requirements.txt            # Python dependencies### Speech Interruption System
+
+├── Dockerfile                  # Container configuration
+
+├── docker-compose.yml          # Docker Compose setupThe application uses a sophisticated multi-layer interruption system:
+
+├── .env                        # Environment variables (create this)
+
+├── static/```
+
+│   ├── script.js               # Browser audio + WebSocketAI is speaking (audio scheduled in browser)
+
+│   └── styles.css              # UI styles    ↓
+
+├── templates/User starts speaking (detected by Azure VAD)
+
+│   └── index.html              # Web interface    ↓
+
+└── logs/                       # Conversation logs (auto-created)Azure sends 'speech_started' event to Flask
+
+```    ↓
+
 Flask: speech_started_callback() triggered
-    ↓
-Flask emits Socket.IO event: 'speech_started'
-    ↓
-Browser receives 'speech_started'
-    ↓
-JavaScript: stopAudioPlayback()
-    ↓
-Loop through activeAudioSources[] array
-    ↓
-For each AudioBufferSourceNode:
-  • Call source.stop() (cancel scheduled audio)
-  • Remove from activeAudioSources[]
-    ↓
-Reset nextPlayTime to current time
-    ↓
-Clear audio context
-    ↓
-AI stops speaking, ready for user input
-```
 
-**Key Implementation Details**:
-- **activeAudioSources[]**: Tracks all playing AudioBufferSourceNodes
-- **nextPlayTime**: Schedules sequential audio without overlap
-- **source.stop()**: Explicitly cancels scheduled audio (not just variables)
-- **Auto-cleanup**: onended handler removes sources from array
-- **VAD Integration**: Azure detects speech, not client-side processing
+---    ↓
+
+Flask emits Socket.IO event: 'speech_started'
+
+## 🏗️ Architecture Overview    ↓
+
+Browser receives 'speech_started'
+
+```    ↓
+
+Browser (Web Audio API) ──WebSocket──> Flask Server ──WebSocket──> Azure Voice Live APIJavaScript: stopAudioPlayback()
+
+    ↓                                      ↓                              ↓    ↓
+
+Microphone Input                    Socket.IO Events              AI Foundry AgentLoop through activeAudioSources[] array
+
+Audio Playback                      Audio Processing              Voice Synthesis    ↓
+
+```For each AudioBufferSourceNode:
+
+  • Call source.stop() (cancel scheduled audio)
+
+**Key Technologies:**  • Remove from activeAudioSources[]
+
+- **Frontend**: Web Audio API, Socket.IO client, JavaScript    ↓
+
+- **Backend**: Flask, Flask-SocketIO, Azure SDKReset nextPlayTime to current time
+
+- **Azure**: Voice Live API, AI Foundry Agents, DefaultAzureCredential    ↓
+
+- **Audio**: PCM 16-bit, 24kHz, MonoClear audio context
+
+    ↓
+
+📖 [Detailed Architecture Docs →](https://learn.microsoft.com/azure/ai-services/openai/realtime-audio-quickstart)AI stops speaking, ready for user input
+
+```
 
 ---
 
-## 🚀 Quick Start
+**Key Implementation Details**:
+
+## 🔧 Troubleshooting- **activeAudioSources[]**: Tracks all playing AudioBufferSourceNodes
+
+- **nextPlayTime**: Schedules sequential audio without overlap
+
+### Common Issues- **source.stop()**: Explicitly cancels scheduled audio (not just variables)
+
+- **Auto-cleanup**: onended handler removes sources from array
+
+| Issue | Solution |- **VAD Integration**: Azure detects speech, not client-side processing
+
+|-------|----------|
+
+| **"Unauthorized" / 403** | Check role assignments, wait 5 min for propagation, run `az login` |---
+
+| **Audio not playing** | Check browser microphone permissions, open DevTools (F12) console |
+
+| **WebSocket disconnects** | Check network, verify endpoint URL, check server logs |## 🚀 Quick Start
+
+| **Container fails to start** | Verify environment variables are set correctly |
 
 ### Prerequisites
 
+### Getting Help
+
 1. **Azure Resources**:
-   - Azure AI Foundry project with an AI agent
-   - Azure AI Services account
-   - Azure subscription with appropriate permissions
 
-2. **Local Development**:
-   - Python 3.8+ installed
+```bash   - Azure AI Foundry project with an AI agent
+
+# Check application logs   - Azure AI Services account
+
+docker-compose logs -f   - Azure subscription with appropriate permissions
+
+
+
+# Azure Container Apps logs2. **Local Development**:
+
+az containerapp logs show --name voicelive-app --resource-group mygroup --follow   - Python 3.8+ installed
+
    - Azure CLI installed and logged in (`az login`)
-   - Git (for cloning the repository)
 
-3. **For Docker Deployment**:
-   - Docker Desktop or Docker Engine
-   - Docker Compose (optional)
+# Test authentication   - Git (for cloning the repository)
+
+python -c "from azure.identity import DefaultAzureCredential; \
+
+  cred = DefaultAzureCredential(); \3. **For Docker Deployment**:
+
+  token = cred.get_token('https://ai.azure.com/.default'); \   - Docker Desktop or Docker Engine
+
+  print('✅ Auth OK' if token else '❌ Failed')"   - Docker Compose (optional)
+
+```
 
 ### Installation
 
+---
+
 ```bash
-# 1. Clone the repository
+
+## 📚 Documentation & Resources# 1. Clone the repository
+
 git clone https://github.com/sashgeorge/Voice-Live-API-AI-Foundry-Agents.git
-cd Voice-Live-API-AI-Foundry-Agents
 
-# 2. Create virtual environment
-python -m venv myenv
+### Official Microsoft Docscd Voice-Live-API-AI-Foundry-Agents
 
-# Windows
+- [Azure AI Foundry](https://learn.microsoft.com/azure/ai-studio/what-is-ai-studio)
+
+- [Voice Live API Quickstart](https://learn.microsoft.com/azure/ai-services/openai/realtime-audio-quickstart)# 2. Create virtual environment
+
+- [Azure RBAC Roles](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles)python -m venv myenv
+
+- [Container Apps Deployment](https://learn.microsoft.com/azure/container-apps/overview)
+
+- [Managed Identities](https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview)# Windows
+
 myenv\Scripts\activate
 
-# Linux/Mac
-# source myenv/bin/activate
+### Related Technologies
 
-# 3. Install dependencies
+- [Flask Documentation](https://flask.palletsprojects.com/)# Linux/Mac
+
+- [Socket.IO Documentation](https://socket.io/docs/)# source myenv/bin/activate
+
+- [Web Audio API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+
+- [Docker Documentation](https://docs.docker.com/)# 3. Install dependencies
+
 pip install -r requirements.txt
 
+---
+
 # 4. Create .env file
-# Create .env file with your Azure credentials (see Environment Variables section)
 
-# 5. Login to Azure CLI (for local development)
-az login
+## 🔒 Security Best Practices# Create .env file with your Azure credentials (see Environment Variables section)
 
-# 6. Run the application
-python app.py
-```
+
+
+- ✅ Use managed identities in production (not API keys)# 5. Login to Azure CLI (for local development)
+
+- ✅ Store secrets in Azure Key Vault or Container Apps secretsaz login
+
+- ✅ Enable HTTPS only (`--allow-insecure false`)
+
+- ✅ Assign roles at the most specific scope# 6. Run the application
+
+- ✅ Never commit `.env` files to Gitpython app.py
+
+- ✅ Implement rate limiting for production```
+
+- ✅ Regularly rotate credentials
 
 ### Access the Application
 
+📖 [Azure Security Best Practices →](https://learn.microsoft.com/azure/security/fundamentals/best-practices-and-patterns)
+
 Open your browser and navigate to:
-```
+
+---```
+
 http://localhost:5000
-```
 
-### First Time Usage
+## 🤝 Contributing```
 
-1. Click **"Start Conversation"** button
-2. Browser will prompt for microphone permission → **Allow**
-3. AI agent will greet you with a voice message
-4. Start speaking naturally
+
+
+Contributions welcome! Please:### First Time Usage
+
+1. Fork the repository
+
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)1. Click **"Start Conversation"** button
+
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)2. Browser will prompt for microphone permission → **Allow**
+
+4. Push to branch (`git push origin feature/AmazingFeature`)3. AI agent will greet you with a voice message
+
+5. Open a Pull Request4. Start speaking naturally
+
 5. See real-time transcription in chat
-6. AI interrupts automatically when you speak
 
----
+---6. AI interrupts automatically when you speak
 
-## ⚙️ Environment Variables
 
-Create a `.env` file in the root directory:
 
-### Required Variables
+## 📄 License---
 
-```bash
-# Azure Voice Live API Configuration
+
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.## ⚙️ Environment Variables
+
+
+
+---Create a `.env` file in the root directory:
+
+
+
+## 📧 Support### Required Variables
+
+
+
+- **Issues**: [GitHub Issues](https://github.com/sashgeorge/Voice-Live-API-AI-Foundry-Agents/issues)```bash
+
+- **Azure Support**: [Azure Portal](https://portal.azure.com/#blade/Microsoft_Azure_Support/HelpAndSupportBlade)# Azure Voice Live API Configuration
+
 AZURE_VOICE_LIVE_ENDPOINT=https://your-foundry-project.azure.com
-AZURE_VOICE_LIVE_API_VERSION=2025-10-01
 
-# AI Foundry Agent Configuration
-AI_FOUNDRY_PROJECT_NAME=your-project-name
-AI_FOUNDRY_AGENT_ID=your-agent-id
-```
+---AZURE_VOICE_LIVE_API_VERSION=2025-10-01
 
-### Optional Variables
 
-```bash
-# Flask Configuration
-FLASK_SECRET_KEY=your-secret-key-here
-FLASK_ENV=production  # or 'development'
 
-# Logging
-LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_DIR=./logs
+**Version**: 2.0  # AI Foundry Agent Configuration
 
-# Azure Authentication (if not using DefaultAzureCredential)
-AZURE_TENANT_ID=your-tenant-id
-AZURE_CLIENT_ID=your-client-id
-AZURE_CLIENT_SECRET=your-client-secret
+**Last Updated**: October 7, 2025  AI_FOUNDRY_PROJECT_NAME=your-project-name
 
-# Alternative: API Key Authentication
-AZURE_VOICE_LIVE_API_KEY=your-api-key
-```
+**Author**: Sash George  AI_FOUNDRY_AGENT_ID=your-agent-id
 
-### Environment Variable Reference
+**Repository**: [Voice-Live-API-AI-Foundry-Agents](https://github.com/sashgeorge/Voice-Live-API-AI-Foundry-Agents)```
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `AZURE_VOICE_LIVE_ENDPOINT` | AI Foundry endpoint URL | ✅ Yes | None |
-| `AZURE_VOICE_LIVE_API_VERSION` | API version | ✅ Yes | `2025-10-01` |
-| `AI_FOUNDRY_PROJECT_NAME` | AI Foundry project name | ✅ Yes | None |
-| `AI_FOUNDRY_AGENT_ID` | AI agent identifier | ✅ Yes | None |
-| `FLASK_SECRET_KEY` | Session encryption key | ⚠️ Recommended | Random |
-| `FLASK_ENV` | Environment mode | ❌ No | `production` |
-| `LOG_LEVEL` | Logging verbosity | ❌ No | `INFO` |
-| `AZURE_TENANT_ID` | Azure AD tenant (optional) | ❌ No | Auto-detected |
-| `AZURE_CLIENT_ID` | Service principal ID | ❌ No | Auto-detected |
-| `AZURE_CLIENT_SECRET` | Service principal secret | ❌ No | Auto-detected |
-| `AZURE_VOICE_LIVE_API_KEY` | API key (alternative auth) | ❌ No | None |
 
-### Finding Your Azure Values
-
-#### 1. AI Foundry Endpoint
-
-**Option A: Azure Portal**
-- Go to [Azure AI Foundry Portal](https://ai.azure.com)
-- Select your project
-- Go to **Settings** → **Properties**
-- Copy the **Endpoint URL**
-
-**Option B: Azure CLI**
-```bash
-az ml workspace show \
-  --name <project-name> \
-  --resource-group <resource-group> \
-  --query discoveryUrl -o tsv
-```
-
-#### 2. Project Name and Agent ID
-
-- Go to [Azure AI Foundry Portal](https://ai.azure.com)
-- Navigate to your project
-- Select **"Agents"** from the left menu
-- Find your agent
-- Copy the **Project Name** (top of page)
-- Copy the **Agent ID** (in agent details)
-
-#### 3. API Version
-
-Use `2025-10-01` (current stable version)
-
-Check [Azure Voice Live API documentation](https://learn.microsoft.com/azure/ai-services/openai/realtime-audio-quickstart) for latest versions.
-
----
 
 ## 🔐 Azure Roles & Permissions
 
@@ -374,8 +591,6 @@ Your identity (user account or managed identity) needs these roles:
 
 #### 1. Azure AI Developer
 
-**Role ID**: `64702f94-c441-49e6-a78b-ef80e0188fee`
-
 **Permissions**:
 - ✅ Read/write access to AI Foundry projects
 - ✅ Access to AI agents and deployments
@@ -384,31 +599,11 @@ Your identity (user account or managed identity) needs these roles:
 
 **Scope**: Assign at **AI Foundry Project** level
 
-**How to assign**:
-```bash
-# Get your user ID
-USER_ID=$(az ad signed-in-user show --query id -o tsv)
-
-# Get AI Foundry project resource ID
-PROJECT_ID=$(az ml workspace show \
-  --name <project-name> \
-  --resource-group <resource-group> \
-  --query id -o tsv)
-
-# Assign role
-az role assignment create \
-  --role "Azure AI Developer" \
-  --assignee $USER_ID \
-  --scope $PROJECT_ID
-```
-
 **Documentation**: [Azure AI Developer Role](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#azure-ai-developer)
 
 ---
 
 #### 2. Cognitive Services User
-
-**Role ID**: `a97b65f3-24c7-4388-baec-2e87135dc908`
 
 **Permissions**:
 - ✅ Access to Cognitive Services endpoints
@@ -418,80 +613,10 @@ az role assignment create \
 
 **Scope**: Assign at **AI Services Account** level
 
-**How to assign**:
-```bash
-# Get AI Services account resource ID
-AI_SERVICES_ID=$(az cognitiveservices account show \
-  --name <ai-services-account-name> \
-  --resource-group <resource-group> \
-  --query id -o tsv)
-
-# Assign role
-az role assignment create \
-  --role "Cognitive Services User" \
-  --assignee $USER_ID \
-  --scope $AI_SERVICES_ID
-```
 
 **Documentation**: [Cognitive Services User Role](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#cognitive-services-user)
 
 ---
-
-### Quick Setup Script (Local Development)
-
-```bash
-#!/bin/bash
-
-# Configuration
-SUBSCRIPTION_ID="<your-subscription-id>"
-RESOURCE_GROUP="<your-resource-group>"
-AI_FOUNDRY_PROJECT="<your-ai-foundry-project>"
-AI_SERVICES_ACCOUNT="<your-ai-services-account>"
-
-# Get your user ID
-USER_ID=$(az ad signed-in-user show --query id -o tsv)
-echo "User ID: $USER_ID"
-
-# Get resource IDs
-PROJECT_ID=$(az ml workspace show \
-  --name $AI_FOUNDRY_PROJECT \
-  --resource-group $RESOURCE_GROUP \
-  --query id -o tsv)
-echo "Project ID: $PROJECT_ID"
-
-AI_SERVICES_ID=$(az cognitiveservices account show \
-  --name $AI_SERVICES_ACCOUNT \
-  --resource-group $RESOURCE_GROUP \
-  --query id -o tsv)
-echo "AI Services ID: $AI_SERVICES_ID"
-
-# Assign Azure AI Developer role
-echo "Assigning Azure AI Developer role..."
-az role assignment create \
-  --role "Azure AI Developer" \
-  --assignee $USER_ID \
-  --scope $PROJECT_ID
-
-# Assign Cognitive Services User role
-echo "Assigning Cognitive Services User role..."
-az role assignment create \
-  --role "Cognitive Services User" \
-  --assignee $USER_ID \
-  --scope $AI_SERVICES_ID
-
-echo "✅ Role assignments complete!"
-echo "⏳ Wait 5 minutes for role propagation..."
-```
-
-### Verify Role Assignments
-
-```bash
-# Check your assigned roles
-az role assignment list \
-  --assignee $(az ad signed-in-user show --query id -o tsv) \
-  --all \
-  --output table
-```
 
 ### For Production (Managed Identity)
 
@@ -530,25 +655,7 @@ sleep 300
 echo "✅ Managed identity roles assigned!"
 ```
 
-### Role Propagation
 
-**Important**: Role assignments can take **up to 5 minutes** to propagate. If you get authentication errors immediately after assigning roles, wait a few minutes and try again.
-
-```bash
-# Clear Azure token cache
-az account clear
-
-# Re-login
-az login
-
-# Test authentication
-python -c "from azure.identity import DefaultAzureCredential; \
-  cred = DefaultAzureCredential(); \
-  token = cred.get_token('https://ai.azure.com/.default'); \
-  print('✅ Authentication successful!')"
-```
-
----
 
 ## 💻 Local Development
 
@@ -635,7 +742,6 @@ WARNING: This is a development server.
 ```bash
 # In .env
 LOG_LEVEL=DEBUG
-FLASK_ENV=development
 ```
 
 **View Conversation Logs**:
@@ -653,123 +759,6 @@ cat logs/conversation_*.log
 
 ---
 
-## 🐳 Docker Deployment
-
-### Method 1: Docker Compose (Recommended)
-
-**docker-compose.yml** (included in repository):
-
-```yaml
-version: '3.8'
-
-services:
-  voicelive-app:
-    build: .
-    ports:
-      - "5000:5000"
-    env_file:
-      - .env
-    restart: unless-stopped
-    volumes:
-      - ./logs:/app/logs
-    environment:
-      - FLASK_ENV=production
-```
-
-**Commands**:
-
-```bash
-# Start application
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop application
-docker-compose down
-
-# Rebuild and restart
-docker-compose up -d --build
-```
-
-### Method 2: Docker CLI
-
-```bash
-# Build image
-docker build -t voicelive-api:latest .
-
-# Run container
-docker run -d \
-  --name voicelive-app \
-  -p 5000:5000 \
-  --env-file .env \
-  -v $(pwd)/logs:/app/logs \
-  voicelive-api:latest
-
-# View logs
-docker logs -f voicelive-app
-
-# Stop container
-docker stop voicelive-app
-docker rm voicelive-app
-```
-
-### Dockerfile Overview
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Copy requirements and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Expose port
-EXPOSE 5000
-
-# Run application
-CMD ["python", "app.py"]
-```
-
-### Docker Best Practices
-
-1. **Use .dockerignore**:
-```
-myenv/
-__pycache__/
-*.pyc
-.env
-logs/
-.git/
-*.md
-```
-
-2. **Multi-stage builds** (for smaller images):
-```dockerfile
-FROM python:3.11-slim as builder
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-FROM python:3.11-slim
-WORKDIR /app
-COPY --from=builder /root/.local /root/.local
-COPY . .
-ENV PATH=/root/.local/bin:$PATH
-CMD ["python", "app.py"]
-```
-
-3. **Health checks**:
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD curl -f http://localhost:5000/ || exit 1
-```
-
----
 
 ## ☁️ Azure Container Apps Deployment
 
