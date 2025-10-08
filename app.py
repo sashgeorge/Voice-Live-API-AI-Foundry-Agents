@@ -79,9 +79,32 @@ def receive_audio_and_playback_with_emit(connection) -> None:
         except Exception as e:
             logger.error(f"Error emitting speech_started to browser: {e}")
     
-    # Use the new browser-compatible receive function
-    from voice_live_agents import receive_audio_for_browser
-    receive_audio_for_browser(connection, audio_callback, transcript_callback, speech_started_callback)
+    def response_started_callback():
+        """Notify browser that assistant is generating a response"""
+        try:
+            socketio.emit('response_started', {})
+            logger.info("Response generation started")
+        except Exception as e:
+            logger.error(f"Error emitting response_started to browser: {e}")
+    
+    def response_completed_callback():
+        """Notify browser that assistant finished generating response"""
+        try:
+            socketio.emit('response_completed', {})
+            logger.info("Response generation completed")
+        except Exception as e:
+            logger.error(f"Error emitting response_completed to browser: {e}")
+    
+    # Use the new browser-compatible receive function with enhanced callbacks
+    from voice_live_agents import receive_audio_for_browser_enhanced
+    receive_audio_for_browser_enhanced(
+        connection, 
+        audio_callback, 
+        transcript_callback, 
+        speech_started_callback,
+        response_started_callback,
+        response_completed_callback
+    )
 
 
 

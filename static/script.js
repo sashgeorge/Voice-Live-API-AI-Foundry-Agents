@@ -16,7 +16,6 @@ let audioQueue = [];
 let isPlayingAudio = false;
 let nextPlayTime = 0;
 let activeAudioSources = [];
-let loadingMessageElement = null;
 
 toggleConversationBtn.addEventListener('click', toggleConversation);
 
@@ -59,7 +58,6 @@ async function stopConversation() {
     try {
         toggleConversationBtn.disabled = true;
         addMessage('system', 'Ending conversation...');
-        removeLoadingIndicator();
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
         }
@@ -157,42 +155,47 @@ function updateUI() {
 }
 
 function addMessage(type, text) {
-    // Remove loading indicator when new message arrives
-    removeLoadingIndicator();
+    // Remove empty state if it exists
+    const emptyState = chatMessages.querySelector('.chat-empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
     
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
-    
-    // Format text for better readability
-    if (type === 'assistant' || type === 'user') {
-        // Preserve line breaks and format text
-        messageDiv.textContent = text.trim();
-    } else {
-        messageDiv.textContent = text;
-    }
-    
+    messageDiv.textContent = text;
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function showLoadingIndicator() {
-    // Don't show multiple loading indicators
-    if (loadingMessageElement) return;
+function addLoadingIndicator() {
+    // Remove any existing loading indicator first
+    removeLoadingIndicator();
     
-    loadingMessageElement = document.createElement('div');
-    loadingMessageElement.className = 'loading-message';
-    loadingMessageElement.innerHTML = `
-        <div class="spinner"></div>
-        <span class="loading-text">Assistant is thinking...</span>
+    // Remove empty state if it exists
+    const emptyState = chatMessages.querySelector('.chat-empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'message assistant loading-message';
+    loadingDiv.id = 'loading-indicator';
+    loadingDiv.innerHTML = `
+        <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
     `;
-    chatMessages.appendChild(loadingMessageElement);
+    chatMessages.appendChild(loadingDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 function removeLoadingIndicator() {
-    if (loadingMessageElement) {
-        loadingMessageElement.remove();
-        loadingMessageElement = null;
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) {
+        loadingIndicator.remove();
     }
 }
 
@@ -218,23 +221,33 @@ socket.on('audio_output', (data) => {
 socket.on('transcript', (data) => {
     console.log('Received transcript:', data);
     if (data.text) {
-        const messageType = data.type === 'user' ? 'user' : 'assistant';
+        // Remove any loading indicator
+        removeLoadingIndicator();
         
-        // Show loading indicator when user finishes speaking
-        if (messageType === 'user') {
-            addMessage(messageType, data.text);
-            showLoadingIndicator();
-        } else {
-            // Assistant message - remove loading and show response
-            addMessage(messageType, data.text);
+        // Map 'agent' type to 'assistant' for proper CSS styling
+        let messageType = data.type;
+        if (messageType === 'agent') {
+            messageType = 'assistant';
+        } else if (messageType !== 'user') {
+            messageType = 'assistant'; // default fallback
         }
+        addMessage(messageType, data.text);
     }
+});
+
+socket.on('response_started', () => {
+    console.log('Assistant is generating response...');
+    addLoadingIndicator();
+});
+
+socket.on('response_completed', () => {
+    console.log('Assistant completed response');
+    removeLoadingIndicator();
 });
 
 socket.on('speech_started', () => {
     console.log('User started speaking - stopping audio playback');
     stopAllAudio();
-    removeLoadingIndicator();
 });
 
 socket.on('error', (data) => {

@@ -423,6 +423,106 @@ def receive_audio_for_browser(connection: VoiceLiveConnection, audio_callback=No
         logger.info("Audio reception stopped.")
 
 
+def receive_audio_for_browser_enhanced(connection: VoiceLiveConnection, audio_callback=None, transcript_callback=None, speech_started_callback=None, response_started_callback=None, response_completed_callback=None) -> None:
+    """
+    Enhanced version of receive_audio_for_browser with response status callbacks.
+    
+    Args:
+        connection: The Azure Voice Live connection
+        audio_callback: Optional callback function to handle audio chunks (receives base64 audio string)
+        transcript_callback: Optional callback function to handle transcripts (receives dict with type and text)
+        speech_started_callback: Optional callback function called when user starts speaking (to interrupt playback)
+        response_started_callback: Optional callback function called when assistant starts generating response
+        response_completed_callback: Optional callback function called when assistant completes response
+    """
+    last_audio_item_id = None
+    response_in_progress = False
+
+    logger.info("Starting enhanced audio reception for browser playback...")
+    try:
+        while not stop_event.is_set():
+            raw_event = connection.recv()
+            if raw_event is None:
+                continue
+
+            try:
+                event = json.loads(raw_event)
+                event_type = event.get("type")
+                logger.debug(f"Received event: {event_type}")
+
+                if event_type == "session.created":
+                    session = event.get("session")
+                    logger.info(f"Session created: {session.get('id')}")
+                    write_conversation_log(f"SessionID: {session.get('id')}")
+
+                elif event_type == "conversation.item.input_audio_transcription.completed":
+                    user_transcript = event.get("transcript", "")
+                    print(f'\n\tUser Input:\t{user_transcript}\n')
+                    write_conversation_log(f'User Input:\t{user_transcript}')
+                    
+                    if transcript_callback:
+                        transcript_callback({'type': 'user', 'text': user_transcript})
+
+                elif event_type == "response.created":
+                    logger.info("Response generation started")
+                    response_in_progress = True
+                    if response_started_callback:
+                        response_started_callback()
+
+                elif event_type == "response.done":
+                    logger.info("Response generation completed")
+                    response_in_progress = False
+                    if response_completed_callback:
+                        response_completed_callback()
+
+                elif event_type == "response.text.done":
+                    agent_text = event.get("text", "")
+                    print(f'\n\tAgent Text Response:\t{agent_text}\n')
+                    write_conversation_log(f'Agent Text Response:\t{agent_text}')
+
+                elif event_type == "response.audio_transcript.done":
+                    agent_audio = event.get("transcript", "")
+                    print(f'\n\tAgent Audio Response:\t{agent_audio}\n')
+                    write_conversation_log(f'Agent Audio Response:\t{agent_audio}')
+                    
+                    if transcript_callback:
+                        transcript_callback({'type': 'assistant', 'text': agent_audio})
+
+                elif event_type == "response.audio.delta":
+                    if event.get("item_id") != last_audio_item_id:
+                        last_audio_item_id = event.get("item_id")
+
+                    audio_delta = event.get("delta", "")
+                    if audio_delta:
+                        logger.debug(f"Received audio delta")
+                        if audio_callback:
+                            audio_callback(audio_delta)
+                        else:
+                            browser_audio_output_queue.put(audio_delta)
+
+                elif event_type == "input_audio_buffer.speech_started":
+                    print("Speech started")
+                    if speech_started_callback:
+                        speech_started_callback()
+
+                elif event_type == "error":
+                    error_details = event.get("error", {})
+                    error_type = error_details.get("type", "Unknown")
+                    error_code = error_details.get("code", "Unknown")
+                    error_message = error_details.get("message", "No message provided")
+                    logger.error(f"Error received: Type={error_type}, Code={error_code}, Message={error_message}")
+                    raise ValueError(f"Error received: Type={error_type}, Code={error_code}, Message={error_message}")
+                    
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON event: {e}")
+                continue
+
+    except Exception as e:
+        logger.error(f"Error in audio reception: {e}")
+    finally:
+        logger.info("Enhanced audio reception stopped.")
+
+
 def receive_audio_and_playback(connection: VoiceLiveConnection) -> None:
     last_audio_item_id = None
     audio_player = AudioPlayerAsync()
