@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  voicelive-api:
+    build: .
+    container_name: voicelive-api
+    ports:
+      - "5000:5000"
+    environment:
+      - AZURE_VOICE_LIVE_ENDPOINT=${AZURE_VOICE_LIVE_ENDPOINT}
+      - AZURE_VOICE_LIVE_MODEL=${AZURE_VOICE_LIVE_MODEL}
+      - AZURE_VOICE_LIVE_API_VERSION=${AZURE_VOICE_LIVE_API_VERSION}
+      - AZURE_VOICE_LIVE_API_KEY=${AZURE_VOICE_LIVE_API_KEY}
+      - AI_FOUNDRY_PROJECT_NAME=${AI_FOUNDRY_PROJECT_NAME}
+      - AI_FOUNDRY_AGENT_ID=${AI_FOUNDRY_AGENT_ID}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - voicelive-network
+
+networks:
+  voicelive-network:
+    driver: bridge
