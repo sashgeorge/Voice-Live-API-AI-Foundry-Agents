@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="primary_blue">#007AFF</color>
+    <color name="success_green">#34C759</color>
+    <color name="danger_red">#FF3B30</color>
+    
+    <!-- Background Colors -->
+    <color name="background_dark">#000000</color>
+    <color name="surface_dark">#1C1C1E</color>
+    <color name="surface_elevated">#2C2C2E</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8E8E93</color>
+    
+    <!-- Message Colors -->
+    <color name="user_message_bg">#0A84FF</color>
+    <color name="assistant_message_bg">#2C2C2E</color>
+    <color name="system_message_bg">#1C1C1E</color>
+    
+    <!-- Status Colors -->
+    <color name="status_ready">#34C759</color>
+    <color name="status_active">#FF3B30</color>
+    <color name="status_connecting">#FF9500</color>
+</resources>
